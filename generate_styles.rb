@@ -1,10 +1,12 @@
 #! /usr/bin/ruby
 # encoding: utf-8
 
-# for FileUtils.mkdir_p
+# for FileUtils.mkdir_p and .cp_r
 require 'fileutils'
 # for script options
 require 'optparse'
+# for publishers.json
+require 'json'
 
 # converts style title to style ID
 def title_to_styleID(title)
@@ -92,6 +94,13 @@ parser.parse!
 # Print current directory
 This_script_dir = File.dirname(File.expand_path(__FILE__))
 $stderr.puts "Script:\t#{This_script_dir}"
+
+# Read publishers.json
+begin
+  publishers = JSON.parse(File.read("#{This_script_dir}/publishers.json"))
+rescue
+  abort("Error parsing file \"publishers.json\" (make sure file is valid JSON)")
+end
 
 # Determine directories to parse
 data_subdir_paths = []
@@ -203,7 +212,7 @@ data_subdir_paths.each do |data_subdir|
     old_and_new_names[fields[0]] = fields[1] if fields.length == 2
   end
 
-  xml_comment = "Generated with https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles/data/#{data_subdir}"
+  xml_comment = publishers["#{data_subdir}"] + ", generated from \"#{data_subdir}\" metadata at https://github.com/citation-style-language/journals"
 
   # iterate over each journal
   header_info = []
@@ -329,16 +338,21 @@ data_subdir_paths.each do |data_subdir|
   if sync_styles == true
     old_identifiers = []
 
+    # legacy XML comment format
+    old_xml_comment = "Generated with https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles/data/#{data_subdir}"
+
     dependents_path = "#{Dependent_dir_path}/*.csl"
     # check each dependent style for XML comment (field_values['XML-COMMENT'])
-    Dir.glob(dependents_path) do |dependent|
+    Dir.glob(dependents_path) do |dependent_path|
       # delete dependent style if generated from current data subdirectory
-      if File.readlines(dependent).grep(/<!-- #{xml_comment} -->/).size > 0
-        old_identifier = File.basename(dependent, '.csl')
+      dependent = File.readlines(dependent_path)
+      # Need `#{Regexp.escape(xml_comment)}` to escape possible parentheses in publisher names
+      if (dependent.grep(/<!-- #{old_xml_comment} -->/).size > 0) or (dependent.grep(/<!-- #{Regexp.escape(xml_comment)} -->/).size > 0)
+        old_identifier = File.basename(dependent_path, '.csl')
         old_identifiers.push(old_identifier)
 
         if do_deletions and !identifiers.include?(old_identifier)
-          File.delete(dependent)
+          File.delete(dependent_path)
           deleted_styles += 1
         end
       end
@@ -360,8 +374,13 @@ data_subdir_paths.each do |data_subdir|
           old_style = File.read(old_style_path)
           new_style = File.read(new_style_path)
 
+          # remove xml comment(s)
+          xml_comment_regex = Regexp.new("<!--(.+)-->")
+          new_style.sub!(xml_comment_regex, '<!-- -->')
+          old_style.sub!(xml_comment_regex, '<!-- -->')
+          
           # remove timestamp
-          timestamp_regex = Regexp.new("/<updated>(.+)<\/updated>/")
+          timestamp_regex = Regexp.new("<updated>(.+)<\/updated>")
           new_style.sub!(timestamp_regex, '<updated/>')
           old_style.sub!(timestamp_regex, '<updated/>')
 
