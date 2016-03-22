@@ -1,5 +1,5 @@
 #### Notice
-This repository was created on 2016-03-10 as a dedicated home for the journal metadata previously stored at https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles (in the now-removed "generate_dependent_styles" subdirectory).
+This repository was created on 2016-03-10 as a dedicated home for the journal metadata previously stored in the https://github.com/citation-style-language/utilities/ repository (in the now-removed "generate_dependent_styles" subdirectory).
 
 # Journals
 ## Metadata repository for dependent CSL styles
