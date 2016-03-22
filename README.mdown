@@ -4,12 +4,12 @@ This repository was created on 2016-03-10 as a dedicated home for the journal me
 # Journals
 ## Metadata repository for dependent CSL styles
 While there seems to be an endless variety of citation formats, many publishers fortunately standardize on one, or at most a few, citation formats for their collection of journals.
-This reduces the number of "independent" CSL citation styles we need to maintain, and allows us to create lightweight "dependent" CSL styles for the individual journals.
+This reduces the number of "independent" CSL citation styles we need to maintain and allows us to create lightweight "dependent" CSL styles for the individual journals.
 
 Whereas independent styles contain a full description of a citation format, dependent styles are light-weight and act as an alias to an independent style (while dependent styles inherit their complete style format from their parent style, they can re(define) one setting: the style locale).
 
 This `journals` repository holds a collection of journal metadata for publishers that have standardized their use of citation formats.
-At minimum, this metadata should include the journal titles and ISSNs (print and online).
+At a minimum, this metadata should include the journal titles and ISSNs (print and online).
 Through a script, we can quickly generate dependent CSL styles from this metadata.
 
 ## Generating dependent styles
@@ -185,7 +185,7 @@ ruby generate_styles.rb -d asm -s a
 ```
 
 When you are preparing a pull request for a big metadata update for a large publisher, it's often a good idea to create separate commits for style additions, deletions, and modifications.
-This makes it easier to review the pull requests, since Git gets easily confused if a commit contains both style deletions and additions, and will often mistake these for style renamings. 
+This makes it easier to review the pull requests, since Git gets easily confused if a commit contains both style deletions and additions and will often mistake these for style renamings. 
 
 ##### Updating timestamps
 
