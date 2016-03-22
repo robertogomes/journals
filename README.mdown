@@ -1,12 +1,12 @@
 #### Notice
-This repository was created on 2016-03-10 as a dedicated home for the journal metadata previously stored at https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles.
+This repository was created on 2016-03-10 as a dedicated home for the journal metadata previously stored at https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles (in the now-removed "generate_dependent_styles" subdirectory).
 
 # Journals
 ## Metadata repository for dependent CSL styles
 While there seems to be an endless variety of citation formats, many publishers fortunately standardize on one, or at most a few, citation formats for their collection of journals.
 This reduces the number of "independent" CSL citation styles we need to maintain, and allows us to create lightweight "dependent" CSL styles for the individual journals.
 
-Whereas independent styles contain a full description of a citation format, dependent styles are light-weight and act as an alias to an independent style.
+Whereas independent styles contain a full description of a citation format, dependent styles are light-weight and act as an alias to an independent style (while dependent styles inherit their complete style format from their parent style, they can re(define) one setting: the style locale).
 
 This `journals` repository holds a collection of journal metadata for publishers that have standardized their use of citation formats.
 At minimum, this metadata should include the journal titles and ISSNs (print and online).
@@ -20,7 +20,7 @@ Some publishers conveniently publish spreadsheets with all the necessary details
 Sometimes we contact publishers to ask for their journal metadata, or for small publishers, compile the metadata by hand.
 
 Each publisher gets its own metadata directory in the root of this repository (e.g., `asm` for the American Society for Microbiology).
-The file [publishers.json](https://github.com/citation-style-language/journals/blob/master/publishers.json) matches each directory names to a full publisher name.
+When creating a new publisher directory, update the file [publishers.json](https://github.com/citation-style-language/journals/blob/master/publishers.json) to match the directory name to a full publisher name.
 
 #### Required files
 Each publisher directory must contain the following files:
@@ -88,7 +88,7 @@ An example:
 
 This template file should include all metadata that is the same for all journals.
 In contrast, template placeholders should be used for metadata that differs between journals.
-These placeholders, in all-caps and enclosed in pound signs (e.g., `#TITLE#`), are replaced by journal metadata during style generation.
+These placeholders, in all-caps and enclosed in hashes (e.g., `#TITLE#`), are replaced by journal metadata during style generation.
 Except for the automatically generated "IDENTIFIER" and "XML-COMMENT" metadata fields, all placeholders must therefore match metadata field names from `_journals.tab`.
 
 If the metadata field for a journal is empty or contains only a single character, the entire line containing the matching placeholder is deleted in the generated style.
@@ -149,9 +149,9 @@ Once the journal metadata has been properly formatted, dependent styles can be g
 ruby generate_styles.rb
 ```
 
-Generated styles are placed in the `dependent` subdirectory of the `journals` repository, which will be created if it does not yet exist.
+Generated styles are placed in the `_dependent` subdirectory of the `journals` repository, which will be created if it does not yet exist.
 Existing directory contents will be deleted for each run of the script.
-Since the `dependent` directory is listed in `.gitignore`, you won't accidentally commit any generated styles to the `journals` repository.
+Since the `_dependent` directory is listed in `.gitignore`, you won't accidentally commit any generated styles to the `journals` repository.
 
 #### Generating styles for a single publisher
 
@@ -165,23 +165,23 @@ ruby generate_styles.rb -d asm
 
 #### Updating the `styles` repository 
 
-If you use the `--replace` (or `-r`) option, the script will automatically update your local `styles` repository with the newly generated styles.
+If you use the `--sync` (or `-s`) option, the script will automatically update your local `styles` repository with the newly generated styles.
 This requires that you cloned the CSL `styles` and `journals` repositories into the same parent directory.
 
-When using the `--replace` option, the script will by default delete all existing generated dependent styles from the local `styles` repository, and copy over the newly generated styles.
+When using the `--sync` option, the script will by default delete all existing generated dependent styles from the local `styles` repository, and copy over the newly generated styles.
 Only those dependent styles are deleted that have an XML comment that matches one of the publisher directories processed by the script (e.g., "Generated with https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles/data/**subdirectory**").
 
-The `--replace` option may be followed by a qualifier to limit which styles are updated. The qualifiers are "additions", "deletions", and "modifications", which together cover all possible replacements:
+The `--sync` option may be followed by a qualifier to limit which styles are updated. The qualifiers are "additions", "deletions", and "modifications", which together cover all possible updates:
 
 * "additions": only styles that don't yet exist in the `styles` repository are copied over
 * "deletions": only previously generated styles that aren't present in the newly generated set are deleted from the `styles` directory.
 * "modifications": only styles that already exist in the `styles` directory are copied over
 
-The `--dir` and `--replace` options can be used in combination. Also note that it's enough to type the first letter of the desired qualifier.
+The `--dir` and `--sync` options can be used in combination. Also note that it's enough to type the first letter of the desired qualifier.
 For example, to generate the styles for the "asm" directory and copy over only the new styles, use:
 
 ```
-ruby generate_styles.rb -d asm -r a
+ruby generate_styles.rb -d asm -s a
 ```
 
 When you are preparing a pull request for a big metadata update for a large publisher, it's often a good idea to create separate commits for style additions, deletions, and modifications.
@@ -189,10 +189,10 @@ This makes it easier to review the pull requests, since Git gets easily confused
 
 ##### Updating timestamps
 
-When using the `--replace` option, the script will by default not touch those styles in the `styles` repository that are identical to a newly generated style, or if the only difference is the style's timestamp (stored in `<updated/>`).
+When using the `--sync` option, the script will by default not touch those styles in the `styles` repository that are identical to a newly generated style, or if the only differences are in the styles' timestamps (stored in `<updated/>`) and/or the styles' XML comments.
 This allows you to update the timestamp in `_template.tab` with every metadata update, while avoiding changes to all styles for which the journal metadata stayed the same.
 
-However, you can force the replacement of all styles by using the `--replace` option in combination with `--force` (or `-f`) option.
+However, you can force the replacement of all styles by using the `--sync` option in combination with `--force` (or `-f`) option.
 
 ### Troubleshooting
 
