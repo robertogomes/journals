@@ -1,10 +1,12 @@
 #! /usr/bin/ruby
 # encoding: utf-8
 
-# for FileUtils.mkdir_p
+# for FileUtils.mkdir_p and .cp_r
 require 'fileutils'
 # for script options
 require 'optparse'
+# for publishers.json
+require 'json'
 
 # converts style title to style ID
 def title_to_styleID(title)
@@ -63,7 +65,7 @@ def title_to_styleID(title)
   styleID
 end
 
-options = { directory: nil, replace: false }
+options = { directory: nil, sync: false }
 
 parser = OptionParser.new do|opts|
   opts.banner = 'Usage: generate_styles.rb [options]'
@@ -71,14 +73,14 @@ parser = OptionParser.new do|opts|
     options[:directory] = directory
   end
 
-  opts.on('-r', '--replace [LIMITED_TO]', %w(additions deletions modifications),
-          'Replace styles in "styles" repo, optionally limited to: "[a]dditions", "[d]eletions", "[m]odifications"') do |replace_type|
-    options[:replace] = true
-    options[:replace_type] = replace_type || ''
+  opts.on('-s', '--sync [LIMITED_TO]', %w(additions deletions modifications),
+          'Sync style changes to "styles" repo, optionally limited to: "[a]dditions", "[d]eletions", "[m]odifications"') do |sync_type|
+    options[:sync] = true
+    options[:sync_type] = sync_type || ''
   end
 
-  opts.on('-f', '--force', 'Force replace (by default, styles that only differ in their timestamp are not replaced)') do |_force_replace|
-    options[:force_replace] = true
+  opts.on('-f', '--force', 'Force sync (by default, styles that only differ in their timestamp are not updated)') do |_force_sync|
+    options[:force_sync] = true
   end
 
   opts.on('-h', '--help', 'Show help') do
@@ -92,6 +94,13 @@ parser.parse!
 # Print current directory
 This_script_dir = File.dirname(File.expand_path(__FILE__))
 $stderr.puts "Script:\t#{This_script_dir}"
+
+# Read publishers.json
+begin
+  publishers = JSON.parse(File.read("#{This_script_dir}/publishers.json"))
+rescue
+  abort("Error parsing file \"publishers.json\" (make sure file is valid JSON)")
+end
 
 # Determine directories to parse
 data_subdir_paths = []
@@ -110,20 +119,20 @@ else
   end
 end
 
-# determine whether styles can be replaced
-replace_styles = false
-if options[:replace] == true
+# determine whether styles can be synced
+sync_styles = false
+if options[:sync] == true
 
   # check presence style dependents folder
-  Dependent_dir_path = File.expand_path('../../styles/dependent', This_script_dir)
+  Dependent_dir_path = File.expand_path('../styles/dependent', This_script_dir)
   if File.exist? Dependent_dir_path
-    replace_styles = true
+    sync_styles = true
 
     do_additions = false
     do_deletions = false
     do_modifications = false
 
-    case options[:replace_type]
+    case options[:sync_type]
     when 'additions'
       do_additions = true
     when 'deletions'
@@ -136,19 +145,19 @@ if options[:replace] == true
       do_modifications = true
     end
 
-    do_force_replace = false
-    do_force_replace = true if options[:force_replace] == true
+    do_force_sync = false
+    do_force_sync = true if options[:force_sync] == true
 
     deleted_styles = 0
     copied_styles = 0
   else
-    $stderr.puts "WARNING: Can't replace styles. Target directory not found at '#{Dependent_dir_path}'"
+    $stderr.puts "WARNING: Can't sync styles. Target directory not found at '#{Dependent_dir_path}'"
     abort 'Failed'
   end
 end
 
 # start with new empty style directory
-generated_style_dir_path = "#{This_script_dir}/dependent"
+generated_style_dir_path = "#{This_script_dir}/_dependent"
 `rm -R '#{generated_style_dir_path}'` if File.exist? generated_style_dir_path
 $stderr.puts "Output:\t#{generated_style_dir_path}"
 $stderr.puts "\n"
@@ -203,7 +212,7 @@ data_subdir_paths.each do |data_subdir|
     old_and_new_names[fields[0]] = fields[1] if fields.length == 2
   end
 
-  xml_comment = "Generated with https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles/data/#{data_subdir}"
+  xml_comment = publishers["#{data_subdir}"] + ", generated from \"#{data_subdir}\" metadata at https://github.com/citation-style-language/journals"
 
   # iterate over each journal
   header_info = []
@@ -326,19 +335,24 @@ data_subdir_paths.each do |data_subdir|
 
   identifiers_master_list += identifiers
 
-  if replace_styles == true
+  if sync_styles == true
     old_identifiers = []
+
+    # legacy XML comment format
+    old_xml_comment = "Generated with https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles/data/#{data_subdir}"
 
     dependents_path = "#{Dependent_dir_path}/*.csl"
     # check each dependent style for XML comment (field_values['XML-COMMENT'])
-    Dir.glob(dependents_path) do |dependent|
+    Dir.glob(dependents_path) do |dependent_path|
       # delete dependent style if generated from current data subdirectory
-      if File.readlines(dependent).grep(/<!-- #{xml_comment} -->/).size > 0
-        old_identifier = File.basename(dependent, '.csl')
+      dependent = File.readlines(dependent_path)
+      # Need `#{Regexp.escape(xml_comment)}` to escape possible parentheses in publisher names
+      if (dependent.grep(/<!-- #{old_xml_comment} -->/).size > 0) or (dependent.grep(/<!-- #{Regexp.escape(xml_comment)} -->/).size > 0)
+        old_identifier = File.basename(dependent_path, '.csl')
         old_identifiers.push(old_identifier)
 
         if do_deletions and !identifiers.include?(old_identifier)
-          File.delete(dependent)
+          File.delete(dependent_path)
           deleted_styles += 1
         end
       end
@@ -352,7 +366,7 @@ data_subdir_paths.each do |data_subdir|
       if do_additions and !old_identifiers.include?(new_identifier)
         write = true
       elsif do_modifications and old_identifiers.include?(new_identifier)
-        if do_force_replace == true
+        if do_force_sync == true
           write = true
         else
           # read old and new style
@@ -360,8 +374,13 @@ data_subdir_paths.each do |data_subdir|
           old_style = File.read(old_style_path)
           new_style = File.read(new_style_path)
 
+          # remove xml comment(s)
+          xml_comment_regex = Regexp.new("<!--(.+)-->")
+          new_style.sub!(xml_comment_regex, '<!-- -->')
+          old_style.sub!(xml_comment_regex, '<!-- -->')
+          
           # remove timestamp
-          timestamp_regex = Regexp.new("/<updated>(.+)<\/updated>/")
+          timestamp_regex = Regexp.new("<updated>(.+)<\/updated>")
           new_style.sub!(timestamp_regex, '<updated/>')
           old_style.sub!(timestamp_regex, '<updated/>')
 
@@ -399,7 +418,7 @@ data_subdir_paths.each do |data_subdir|
   total_count_created_styles += count_created_styles
 end
 
-if replace_styles == true
+if sync_styles == true
   $stderr.puts "Deleted #{deleted_styles} styles from #{Dependent_dir_path}"
   $stderr.puts "Copied #{copied_styles} styles to #{Dependent_dir_path}"
 end
