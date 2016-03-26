@@ -341,13 +341,16 @@ data_subdir_paths.each do |data_subdir|
     # legacy XML comment format
     old_xml_comment = "Generated with https://github.com/citation-style-language/utilities/tree/master/generate_dependent_styles/data/#{data_subdir}"
 
+    # end of the current XML comment format (don't match against publisher description)
+    xml_comment_tail = ", generated from \"#{data_subdir}\" metadata at https://github.com/citation-style-language/journals"
+
     dependents_path = "#{Dependent_dir_path}/*.csl"
     # check each dependent style for XML comment (field_values['XML-COMMENT'])
     Dir.glob(dependents_path) do |dependent_path|
       # delete dependent style if generated from current data subdirectory
       dependent = File.readlines(dependent_path)
       # Need `#{Regexp.escape(xml_comment)}` to escape possible parentheses in publisher names
-      if (dependent.grep(/<!-- #{old_xml_comment} -->/).size > 0) or (dependent.grep(/<!-- #{Regexp.escape(xml_comment)} -->/).size > 0)
+      if (dependent.grep(/<!-- #{old_xml_comment} -->/).size > 0) or (dependent.grep(/<!-- (.*)#{Regexp.escape(xml_comment)} -->/).size > 0)
         old_identifier = File.basename(dependent_path, '.csl')
         old_identifiers.push(old_identifier)
 
