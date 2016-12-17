@@ -212,7 +212,12 @@ data_subdir_paths.each do |data_subdir|
     old_and_new_names[fields[0]] = fields[1] if fields.length == 2
   end
 
-  xml_comment = publishers["#{data_subdir}"] + ", generated from \"#{data_subdir}\" metadata at https://github.com/citation-style-language/journals"
+  xml_comment = "generated from \"#{data_subdir}\" metadata at https://github.com/citation-style-language/journals"
+  if publishers.key?(data_subdir)
+    xml_comment = publishers["#{data_subdir}"] + ", " + xml_comment
+  else
+    $stderr.puts "WARNING: #{data_subdir} not listed in publishers.json"
+  end
 
   # iterate over each journal
   header_info = []
