@@ -5,7 +5,6 @@ soil-biology-and-biochemistry
 heart-and-lung-the-journal-of-acute-and-critical-care
 american-journal-of-emergency-medicine
 arthroscopy-the-journal-of-arthroscopic-and-related-surgery
-sensors-and-actuators-b-chemical
 progress-in-natural-science-materials-international
 arthropod-structure-and-development
 american-journal-of-geriatric-pharmacotherapy
