@@ -1,10 +1,14 @@
+## 2017-03-04
+
+Updated metadata from "KBART current journals 2008–2017 titles list" at http://www.rsc.org/journals-books-databases/librarians-information/librarians-portal-account/kbart-marc-url/.
+
 ## 2014-05-15
 
 Updated metadata from "KBART current Journals 2008-2014 Titles List" at http://pubs.rsc.org/en/content/data/url-listing.
 
 ## 2012-07-13
 
-## Generating CSL files for all RSC journals
+### Generating CSL files for all RSC journals
 
 It appears all the journals for the 'Royal Society of Chemistry' follow the same [guidelines for reference formatting](http://www.rsc.org/images/Author%20guidelines_tcm18-186308.pdf).
 
