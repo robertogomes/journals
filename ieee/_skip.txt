@@ -1,3 +1,4 @@
 Applied Physics Letters
 Journal of Applied Physics
 Review of Scientific Instruments
+IEEE Transactions on Medical Imaging
