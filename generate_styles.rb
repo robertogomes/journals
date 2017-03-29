@@ -279,6 +279,9 @@ data_subdir_paths.each do |data_subdir|
 
     # replace en-dashes in title by hyphens
     field_values['TITLE'] = field_values['TITLE'].tr('–', '-')
+    
+    # replace curly apostrophes in title by straight apostrophes
+    field_values['TITLE'] = field_values['TITLE'].tr('’', "'")
 
     # convert square brackets to parentheses in title
     field_values['TITLE'] = field_values['TITLE'].tr('[', '(')
